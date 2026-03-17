@@ -12,6 +12,7 @@
 body {
   background-color: var(--color-dark-bg);
   color: var(--color-text-main);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 .bg-grid {

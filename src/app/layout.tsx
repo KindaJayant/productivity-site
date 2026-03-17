@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Brutally Honest Productivity OS",
@@ -17,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-dark-bg text-text-main flex min-h-screen selection:bg-neon selection:text-black antialiased relative`}>
+      <body className={`bg-dark-bg text-text-main flex min-h-screen selection:bg-neon selection:text-black antialiased relative`}>
         <div className="fixed inset-0 bg-grid pointer-events-none z-0"></div>
         <Navigation />
         <main className="flex-1 overflow-auto relative z-10">

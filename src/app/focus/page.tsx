@@ -1,33 +1,38 @@
-import { Target, ArrowRight } from "lucide-react";
+import { Target, ArrowUpRight } from "lucide-react";
 
 export default function FocusMode() {
   return (
-    <div className="max-w-5xl mx-auto p-8 lg:p-14 min-h-screen flex flex-col relative z-0">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-stallion/40 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+    <div className="max-w-4xl mx-auto p-8 lg:p-16 min-h-screen flex flex-col relative z-10">
       
-      <header className="mb-10 border-b border-walnut pb-10">
-        <div className="flex items-center gap-5 mb-4">
-          <div className="h-16 w-16 rounded-2xl bg-jedi border border-walnut shadow-[0_0_20px_rgba(71,25,20,0.3)] flex items-center justify-center">
-            <Target className="h-8 w-8 text-english drop-shadow-[0_0_8px_rgba(71,25,20,0.8)]" />
-          </div>
-          <h1 className="text-4xl font-black text-martini tracking-tight drop-shadow-[0_0_10px_rgba(182,168,162,0.1)]">Focus Mode</h1>
+      <header className="mb-12 border-b border-dark-border pb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-neon/10 border border-neon/30 text-neon text-xs font-bold tracking-widest uppercase rounded-full mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-neon animate-pulse"></span>
+          Module 01
         </div>
-        <p className="text-martini/70 text-xl font-light">
-          Brain-dump everything on your mind. We'll park the noise and give you one clean prompt for this session.
+        <div className="flex items-center gap-4 mb-3">
+          <div className="p-3 rounded-xl bg-dark-card border border-dark-border flex items-center justify-center">
+            <Target className="h-6 w-6 text-neon" />
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-bold text-text-main tracking-tighter">Focus Engine</h1>
+        </div>
+        <p className="text-text-muted text-lg mt-4 font-medium max-w-2xl">
+          Brain-dump everything on your mind. We'll park the noise and secure a single clean prompt for your session.
         </p>
       </header>
 
-      <div className="flex-1 flex flex-col gap-8">
-        <div className="flex-1 bg-stallion rounded-3xl border border-walnut/50 p-8 shadow-[0_10px_40px_rgba(15,30,29,0.8)] relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-jedi/20 pointer-events-none"></div>
+      <div className="flex-1 flex flex-col gap-6">
+        <div className="flex-1 bg-dark-card rounded-3xl border border-dark-border p-8 relative overflow-hidden group">
           <textarea
-            className="w-full h-full bg-transparent resize-none outline-none text-martini placeholder:text-walnut focus:ring-0 sm:text-xl font-light relative z-10"
-            placeholder="What's distracting you? What are you trying to achieve right now?"
+            className="w-full h-full bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 sm:text-xl font-medium relative z-10 leading-relaxed"
+            placeholder="What's distracting you? What's your immediate objective?"
           />
         </div>
-        <button className="flex items-center justify-center gap-3 w-full sm:w-auto self-end bg-english hover:bg-english/90 text-martini px-10 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_30px_rgba(71,25,20,0.4)] hover:shadow-[0_0_40px_rgba(71,25,20,0.8)] hover:-translate-y-1">
-          Start Session
-          <ArrowRight className="h-6 w-6" />
+        
+        <button className="flex items-center justify-between w-full sm:w-80 self-end bg-neon hover:bg-neon/90 text-black px-8 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_20px_rgba(204,255,0,0.15)] group">
+          Engage Workflow
+          <div className="p-1.5 rounded-full bg-black">
+            <ArrowUpRight className="h-5 w-5 text-neon group-hover:rotate-45 transition-transform" />
+          </div>
         </button>
       </div>
     </div>

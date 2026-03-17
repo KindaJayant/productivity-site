@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-martini: #B6A8A2;
-  --color-english: #471914;
-  --color-stallion: #0F1E1D;
-  --color-walnut: #3F2920;
-  --color-jedi: #070F05;
-  
-  --color-background: var(--color-jedi);
-  --color-foreground: var(--color-martini);
+  --color-neon: #ccff00;
+  --color-dark-bg: #09090b;
+  --color-dark-card: #141417;
+  --color-dark-border: #27272a;
+  --color-text-main: #ffffff;
+  --color-text-muted: #a1a1aa;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-dark-bg);
+  color: var(--color-text-main);
+}
+
+.bg-grid {
+  background-size: 60px 60px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }

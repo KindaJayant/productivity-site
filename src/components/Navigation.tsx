@@ -35,19 +35,6 @@ export function Navigation() {
         ))}
       </nav>
 
-      <div className="mt-auto">
-        <div className="p-5 rounded-2xl bg-dark-card border border-dark-border relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-neon/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-neon/20 transition-all duration-500"></div>
-          <p className="text-xs font-bold text-text-muted tracking-widest uppercase mb-1 relative z-10">Daily Streak</p>
-          <div className="flex items-baseline gap-1 relative z-10">
-            <span className="text-4xl font-bold text-text-main">12</span>
-            <span className="text-sm font-medium text-text-muted">Days</span>
-          </div>
-          <div className="mt-3 w-full bg-dark-border h-1.5 rounded-full overflow-hidden">
-            <div className="bg-neon h-full w-[85%] rounded-full shadow-[0_0_10px_rgba(204,255,0,0.5)]"></div>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

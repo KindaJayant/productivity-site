@@ -24,7 +24,7 @@ export default function FocusMode() {
         <div className="flex-1 bg-dark-card rounded-3xl border border-dark-border p-8 relative overflow-hidden group">
           <textarea
             className="w-full h-full bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 sm:text-xl font-medium relative z-10 leading-relaxed"
-            placeholder="What's distracting you? What's your immediate objective?"
+            placeholder="Example: I keep checking Twitter because I'm stuck on this Redux state bug. My goal for this session is to just isolate the state bug in a CodeSandbox and fix it."
           />
         </div>
         

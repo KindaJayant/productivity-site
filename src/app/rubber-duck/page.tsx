@@ -32,7 +32,14 @@ export default function RubberDuckMode() {
           </div>
           <textarea
             className="w-full flex-1 bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 font-mono text-sm leading-relaxed relative z-10"
-            placeholder="> Paste your code, architecture, or idea here..."
+            placeholder={`> const user = await db.user.findUnique({
+>   where: { id: userId },
+>   include: { posts: true }
+> })
+> 
+> // I feel like this query is getting too slow when 
+> // the user has thousands of posts. Should I paginate 
+> // here or just use a separate endpoint entirely?`}
           />
         </div>
         

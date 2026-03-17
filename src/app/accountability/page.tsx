@@ -25,7 +25,12 @@ export default function AccountabilityMode() {
           <div className="flex-1 bg-dark-card rounded-3xl border border-dark-border p-8 relative overflow-hidden">
             <textarea
               className="w-full h-full min-h-[400px] bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 leading-relaxed text-lg font-medium relative z-10"
-              placeholder="What did you actually accomplish today?"
+              placeholder="Example: 
+- Debugged the Next.js edge runtime issue
+- Wrote API routes for the Stripe integration
+- Finally got the database schema finalized
+
+Blockers: None, feeling good today."
             />
           </div>
           <button className="flex items-center justify-between w-full bg-neon hover:bg-neon/90 text-black px-8 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_20px_rgba(204,255,0,0.15)] group">
@@ -39,7 +44,7 @@ export default function AccountabilityMode() {
         <div className="hidden lg:flex flex-col gap-6">
           <div className="bg-dark-card border border-dark-border rounded-3xl p-8 relative overflow-hidden">
             <h3 className="text-text-muted font-bold text-xs uppercase tracking-widest pl-2 mb-8 border-l-2 border-neon">
-              Ecosystem Status
+              Streak History
             </h3>
             
             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-dark-border before:to-transparent">

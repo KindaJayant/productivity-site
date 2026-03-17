@@ -1,6 +1,28 @@
-import { ShieldCheck, ArrowUpRight } from "lucide-react";
+"use client";
+
+import { ShieldCheck, ArrowUpRight, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { submitAccountability } from "../actions";
 
 export default function AccountabilityMode() {
+  const [input, setInput] = useState("");
+  const [response, setResponse] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!input.trim() || loading) return;
+    setLoading(true);
+    try {
+      // In advanced iterations, we would pull context from Convex here
+      const result = await submitAccountability(input);
+      setResponse(result);
+    } catch (error) {
+      console.error(error);
+      setResponse("Failed to connect to Accountability Agent. Check your API key.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="max-w-6xl mx-auto p-8 lg:p-16 min-h-screen flex flex-col relative z-10">
       
@@ -24,7 +46,10 @@ export default function AccountabilityMode() {
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="flex-1 bg-dark-card rounded-3xl border border-dark-border p-8 relative overflow-hidden">
             <textarea
-              className="w-full h-full min-h-[400px] bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 leading-relaxed text-lg font-medium relative z-10"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={loading || response !== null}
+              className="w-full h-full min-h-[400px] bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 leading-relaxed text-lg font-medium relative z-10 disabled:opacity-50"
               placeholder="Example: 
 - Debugged the Next.js edge runtime issue
 - Wrote API routes for the Stripe integration
@@ -33,10 +58,26 @@ export default function AccountabilityMode() {
 Blockers: None, feeling good today."
             />
           </div>
-          <button className="flex items-center justify-between w-full bg-neon hover:bg-neon/90 text-black px-8 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_20px_rgba(204,255,0,0.15)] group">
-            <span>Commit Daily Log</span>
+          
+          {response && (
+            <div className="bg-neon/10 border border-neon p-6 rounded-2xl relative shadow-[0_0_30px_rgba(204,255,0,0.1)]">
+              <h3 className="text-neon font-bold text-sm uppercase tracking-widest mb-3">Agent Verdict</h3>
+              <p className="text-text-main font-medium whitespace-pre-wrap">{response}</p>
+            </div>
+          )}
+
+          <button 
+            onClick={handleSubmit}
+            disabled={loading || !input.trim() || response !== null}
+            className="flex items-center justify-between w-full bg-neon hover:bg-neon/90 disabled:opacity-50 disabled:cursor-not-allowed text-black px-8 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_20px_rgba(204,255,0,0.15)] group"
+          >
+            <span>{loading ? "Evaluating..." : response ? "Log Committed" : "Commit Daily Log"}</span>
             <div className="p-1.5 rounded-full bg-black">
-              <ArrowUpRight className="h-5 w-5 text-neon group-hover:rotate-45 transition-transform" />
+              {loading ? (
+                <Loader2 className="h-5 w-5 text-neon animate-spin" />
+              ) : (
+                <ArrowUpRight className="h-5 w-5 text-neon group-hover:rotate-45 transition-transform" />
+              )}
             </div>
           </button>
         </div>

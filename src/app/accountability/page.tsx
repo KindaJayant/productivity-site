@@ -4,6 +4,7 @@ import { ShieldCheck, ArrowUpRight, Loader2, RotateCcw, Check, X } from "lucide-
 import { useState, useRef, useEffect } from "react";
 import { submitAccountability } from "../actions";
 import { Message } from "@/lib/openrouter";
+import { logActivity } from "@/components/StreakWidget";
 
 // Mock habit struct array for demonstration of the GitHub style contribution grid
 const HABITS = [
@@ -12,11 +13,20 @@ const HABITS = [
   { id: "read", label: "Read" },
 ];
 
-// Generate 14 random days of mock data (GitHub activity grid style)
-const generateMockGrid = () => {
+type DailyRecord = {
+  date: string;
+  gym: boolean | null;
+  nofap: boolean | null;
+  read: boolean | null;
+};
+
+// Generate the last 14 days scaffolding
+const generateLast14Days = (): DailyRecord[] => {
   return Array.from({ length: 14 }).map((_, i) => ({
-    date: new Date(Date.now() - (13 - i) * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    completed: Math.random() > 0.4, // 60% completion rate randomly
+    date: new Date(Date.now() - (13 - i) * 24 * 60 * 60 * 1000).toDateString(),
+    gym: null,
+    nofap: null,
+    read: null,
   }));
 };
 
@@ -32,6 +42,42 @@ export default function AccountabilityMode() {
     nofap: false,
     read: false,
   });
+  
+  const [history, setHistory] = useState<DailyRecord[]>([]);
+
+  useEffect(() => {
+    // Load history from local storage
+    const stored = localStorage.getItem('brutal_habits');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const baseline = generateLast14Days();
+        
+        // Merge stored data into our 14 day window
+        const merged = baseline.map(day => {
+          const found = parsed.find((p: DailyRecord) => p.date === day.date);
+          return found || day;
+        });
+        
+        setHistory(merged);
+        
+        // Load today's specific toggles if they exist
+        const today = new Date().toDateString();
+        const todaysRecord = merged.find((r: DailyRecord) => r.date === today);
+        if (todaysRecord) {
+          setTodaysHabits({
+            gym: todaysRecord.gym || false,
+            nofap: todaysRecord.nofap || false,
+            read: todaysRecord.read || false,
+          });
+        }
+      } catch (e) {
+        setHistory(generateLast14Days());
+      }
+    } else {
+      setHistory(generateLast14Days());
+    }
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -54,6 +100,10 @@ export default function AccountabilityMode() {
         : undefined;
 
       const result = await submitAccountability(newMessages, context);
+      
+      // Log the streak once the action completes successfully
+      logActivity();
+      
       setMessages([...newMessages, { role: "assistant", content: result }]);
     } catch (error) {
       console.error(error);
@@ -69,7 +119,26 @@ export default function AccountabilityMode() {
   };
 
   const toggleHabit = (id: string) => {
-    setTodaysHabits(prev => ({ ...prev, [id]: !prev[id] }));
+    const newVal = !todaysHabits[id];
+    
+    setTodaysHabits(prev => {
+      const updated = { ...prev, [id]: newVal };
+      
+      // Sync to history immediately
+      setHistory(prevHistory => {
+        const todayStr = new Date().toDateString();
+        const newHistory = prevHistory.map(day => {
+          if (day.date === todayStr) {
+            return { ...day, [id]: updated[id] };
+          }
+          return day;
+        });
+        localStorage.setItem('brutal_habits', JSON.stringify(newHistory));
+        return newHistory;
+      });
+      
+      return updated;
+    });
   };
 
   return (
@@ -109,7 +178,6 @@ export default function AccountabilityMode() {
             <div className="flex flex-col gap-6">
               {HABITS.map((habit) => {
                 const isDoneToday = todaysHabits[habit.id];
-                const mockHistory = generateMockGrid(); // In reality, fetch from Convex
 
                 return (
                   <div key={habit.id} className="group">
@@ -119,30 +187,36 @@ export default function AccountabilityMode() {
                         onClick={() => toggleHabit(habit.id)}
                         className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border ${
                           isDoneToday 
-                            ? "bg-neon/20 border-neon text-neon shadow-[0_0_10px_rgba(204,255,0,0.2)]" 
-                            : "bg-transparent border-dark-border text-text-muted hover:text-text-main"
+                            ? "bg-neon border-neon text-black shadow-[0_0_10px_rgba(204,255,0,0.5)]" 
+                            : "bg-transparent border-red-500 text-red-500 hover:bg-red-500/10"
                         }`}
                       >
-                        {isDoneToday ? "Done" : "Pending"}
+                        {isDoneToday ? "Done" : "Missed"}
                       </button>
                     </div>
                     
                     {/* Activity Grid */}
                     <div className="flex gap-1">
-                      {mockHistory.map((day, i) => (
-                        <div 
-                          key={i} 
-                          title={day.date}
-                          className={`flex-1 aspect-square rounded-[2px] transition-colors ${
-                            day.completed ? "bg-neon/60 group-hover:bg-neon/80" : "bg-dark-bg border border-dark-border/50"
-                          }`}
-                        ></div>
-                      ))}
+                      {history.slice(0, 13).map((day, i) => {
+                        const status = day[habit.id as keyof DailyRecord];
+                        let bgColor = "bg-dark-bg border border-dark-border/50"; // null / not recorded
+                        if (status === true) bgColor = "bg-neon/60 group-hover:bg-neon/80";
+                        if (status === false) bgColor = "bg-red-500/40 group-hover:bg-red-500/60";
+
+                        return (
+                          <div 
+                            key={i} 
+                            title={new Date(day.date).toLocaleDateString()}
+                            className={`flex-1 aspect-square rounded-[2px] transition-colors ${bgColor}`}
+                          ></div>
+                        );
+                      })}
+                      
                       {/* Today's square tied to state */}
                       <div 
                         title="Today"
                         className={`flex-1 aspect-square rounded-[2px] transition-all ${
-                          isDoneToday ? "bg-neon shadow-[0_0_5px_rgba(204,255,0,0.5)]" : "bg-dark-border animate-pulse"
+                          isDoneToday ? "bg-neon shadow-[0_0_5px_rgba(204,255,0,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.3)]"
                         }`}
                       ></div>
                     </div>

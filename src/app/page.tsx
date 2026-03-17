@@ -1,5 +1,6 @@
 import { Brain, Target, MessageSquare, ShieldCheck, ArrowUpRight, NotebookPen } from "lucide-react";
 import Link from "next/link";
+import { StreakWidget } from "@/components/StreakWidget";
 
 export default function Home() {
   const modes = [
@@ -50,19 +51,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="p-6 rounded-3xl bg-dark-card border border-dark-border relative overflow-hidden group min-w-[240px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-neon/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-neon/20 transition-all duration-700"></div>
-          <p className="text-xs font-bold text-text-muted tracking-widest uppercase mb-2 relative z-10 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-neon" /> Current Streak
-          </p>
-          <div className="flex items-baseline gap-1 relative z-10 mb-4">
-            <span className="text-5xl font-black text-text-main tracking-tighter">12</span>
-            <span className="text-sm font-bold text-text-muted uppercase tracking-widest">Days</span>
-          </div>
-          <div className="w-full bg-dark-bg border border-dark-border h-2 rounded-full overflow-hidden relative z-10">
-            <div className="bg-neon h-full w-[85%] rounded-full shadow-[0_0_15px_rgba(204,255,0,0.8)]"></div>
-          </div>
-        </div>
+        <StreakWidget />
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

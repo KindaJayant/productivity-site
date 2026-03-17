@@ -1,4 +1,4 @@
-import { Brain, Target, MessageSquare, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { Brain, Target, MessageSquare, ShieldCheck, ArrowUpRight, NotebookPen } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
@@ -23,6 +23,13 @@ export default function Home() {
       icon: <ShieldCheck className="h-8 w-8 text-neon" />,
       href: "/accountability",
       label: "03.",
+    },
+    {
+      title: "Silent Journal",
+      description: "Free-write your thoughts, frustrations, and wins. The agent observes silently and only intercepts for genuine insights.",
+      icon: <NotebookPen className="h-8 w-8 text-neon" />,
+      href: "/journal",
+      label: "04.",
     },
   ];
 

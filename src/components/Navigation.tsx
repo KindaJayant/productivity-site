@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Brain, Target, MessageSquare, ShieldCheck } from "lucide-react";
+import { Brain, Target, MessageSquare, ShieldCheck, NotebookPen } from "lucide-react";
 
 export function Navigation() {
   const navItems = [
@@ -7,6 +7,7 @@ export function Navigation() {
     { name: "Focus Mode", href: "/focus", icon: Target },
     { name: "Rubber Duck", href: "/rubber-duck", icon: MessageSquare },
     { name: "Accountability", href: "/accountability", icon: ShieldCheck },
+    { name: "Silent Journal", href: "/journal", icon: NotebookPen },
   ];
 
   return (

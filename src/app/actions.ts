@@ -84,24 +84,37 @@ export async function submitAccountability(history: Message[], context?: string)
 
 // 4. Journal Mode
 const JOURNAL_PROMPT = `
-You are a silent observer. The user is journalling — this is their private space.
+You are a silent observer and sentiment analyst. The user is journalling — this is their private space.
 
-Read what they've written. Only respond if you notice:
-1. A recurring pattern (same frustration, same avoidance, same win — mentioned 2+ times recently)
-2. A direct contradiction between what they say they want and what they're actually doing
-3. A genuine insight worth surfacing
+You MUST always respond with valid JSON in this exact format:
+{ "sentiment": "<positive|negative|neutral|mixed>", "note": "<string or null>" }
 
-If none of these apply: respond with exactly "." — nothing else.
+For the "sentiment" field, evaluate the emotional tone of the user's latest entry:
+- "positive": optimistic, energetic, accomplished, grateful
+- "negative": frustrated, anxious, burned out, stuck
+- "neutral": matter-of-fact, status update, no strong emotion
+- "mixed": conflicting emotions, bittersweet, complicated
 
-If you do respond:
-- Max 3 sentences
-- No advice unless asked
-- No cheerleading
-- Start with "Noticed:" 
-- Tone: like a quiet, perceptive friend who only talks when it matters
+For the "note" field:
+- Only populate it if you notice one of these:
+  1. A recurring pattern (same frustration or win mentioned 2+ times recently)
+  2. A direct contradiction between stated goals and actual behavior
+  3. A genuine insight worth surfacing
+- If none of these apply, set "note" to null.
+- If you do write a note: max 3 sentences, start with "Noticed:", no cheerleading, no advice unless asked.
+
+CRITICAL: Always return valid JSON. Never return plain text.
 `;
 
-export async function submitJournal(history: Message[]) {
-  return callAgent(history, JOURNAL_PROMPT);
+export async function submitJournal(history: Message[]): Promise<{ sentiment: string; note: string | null }> {
+  const raw = await callAgent(history, JOURNAL_PROMPT);
+  try {
+    // Strip markdown code fences if the model wraps the JSON
+    const clean = raw.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  } catch {
+    // Fallback: treat the raw response as a note with neutral sentiment
+    return { sentiment: "neutral", note: raw.trim() === "." ? null : raw.trim() };
+  }
 }
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { ShieldCheck, ArrowUpRight, Loader2, RotateCcw, Check, X } from "lucide-react";
+import { ShieldCheck, ArrowUpRight, Loader2, RotateCcw, Plus, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { submitAccountability } from "../actions";
 import { Message } from "@/lib/openrouter";
 import { logActivity } from "@/components/StreakWidget";
+import { v4 as uuidv4 } from "uuid";
 
 // Mock habit struct array for demonstration of the GitHub style contribution grid
 const HABITS = [
@@ -20,6 +21,13 @@ type DailyRecord = {
   read: boolean | null;
 };
 
+export type Session = {
+  id: string;
+  title: string;
+  date: string;
+  messages: Message[];
+};
+
 // Generate the last 14 days scaffolding
 const generateLast14Days = (): DailyRecord[] => {
   return Array.from({ length: 14 }).map((_, i) => ({
@@ -32,17 +40,20 @@ const generateLast14Days = (): DailyRecord[] => {
 
 export default function AccountabilityMode() {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 5-Slot Sessions
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  // Habits tracking
   const [todaysHabits, setTodaysHabits] = useState<Record<string, boolean | null>>({
     gym: null,
     nofap: null,
     read: null,
   });
-  
   const [history, setHistory] = useState<DailyRecord[]>([]);
 
   useEffect(() => {
@@ -78,13 +89,17 @@ export default function AccountabilityMode() {
       setHistory(generateLast14Days());
     }
 
-    // Load messages chat history from local storage
-    const storedMsgs = localStorage.getItem('brutal_acc_history');
-    if (storedMsgs) {
+    // Load sessions from local storage
+    const storedSessions = localStorage.getItem('brutal_acc_sessions');
+    if (storedSessions) {
       try {
-        setMessages(JSON.parse(storedMsgs));
+        const parsed = JSON.parse(storedSessions);
+        if (parsed.length > 0) {
+          setSessions(parsed);
+          setActiveSessionId(parsed[0].id);
+        }
       } catch (e) {
-        console.error("Failed to parse acc msgs", e);
+        console.error("Failed to parse acc sessions", e);
       }
     }
     
@@ -93,27 +108,56 @@ export default function AccountabilityMode() {
 
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem("brutal_acc_history", JSON.stringify(messages));
+      localStorage.setItem("brutal_acc_sessions", JSON.stringify(sessions));
     }
-  }, [messages, mounted]);
+  }, [sessions, mounted]);
+
+  const activeSession = sessions.find(s => s.id === activeSessionId) || null;
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [activeSession?.messages]);
+
+  const handleCreateSession = () => {
+    if (sessions.length >= 5) return;
+    
+    const newSession: Session = {
+      id: uuidv4(),
+      title: `Entry 0${sessions.length + 1}`,
+      date: new Date().toISOString(),
+      messages: []
+    };
+    
+    setSessions([newSession, ...sessions]);
+    setActiveSessionId(newSession.id);
+  };
+
+  const handleDeleteSession = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newSessions = sessions.filter(s => s.id !== id);
+    setSessions(newSessions);
+    if (activeSessionId === id) {
+      setActiveSessionId(newSessions.length > 0 ? newSessions[0].id : null);
+    }
+  };
 
   const handleSubmit = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !activeSessionId) return;
     
-    const newMessages: Message[] = [...messages, { role: "user", content: input }];
-    setMessages(newMessages);
+    const userMsg: Message = { role: "user", content: input };
+    const newMessages = [...(activeSession?.messages || []), userMsg];
+    
+    setSessions(prev => prev.map(s => 
+      s.id === activeSessionId ? { ...s, messages: newMessages } : s
+    ));
     setInput("");
     setLoading(true);
 
     try {
       // Build context string from the habit toggles if it's the first message
-      const context = messages.length === 0 
+      const context = (activeSession?.messages.length || 0) === 0 
         ? `Habits Tracking Status:\nGym: ${todaysHabits.gym === true ? "Completed" : todaysHabits.gym === false ? "Failed" : "Pending"}\nNoFap: ${todaysHabits.nofap === true ? "Completed" : todaysHabits.nofap === false ? "Failed" : "Pending"}\nRead: ${todaysHabits.read === true ? "Completed" : todaysHabits.read === false ? "Failed" : "Pending"}`
         : undefined;
 
@@ -122,17 +166,24 @@ export default function AccountabilityMode() {
       // Log the streak once the action completes successfully
       logActivity();
       
-      setMessages([...newMessages, { role: "assistant", content: result }]);
+      setSessions(prev => prev.map(s => 
+        s.id === activeSessionId ? { ...s, messages: [...newMessages, { role: "assistant", content: result }] } : s
+      ));
     } catch (error) {
       console.error(error);
-      setMessages([...newMessages, { role: "assistant", content: "Failed to connect to Accountability Agent. Check your API key." }]);
+      setSessions(prev => prev.map(s => 
+        s.id === activeSessionId ? { ...s, messages: [...newMessages, { role: "assistant", content: "Failed to connect to Accountability Agent. Check your API key." }] } : s
+      ));
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = () => {
-    setMessages([]);
+    if (!activeSessionId) return;
+    setSessions(prev => prev.map(s => 
+      s.id === activeSessionId ? { ...s, messages: [] } : s
+    ));
     setInput("");
   };
 
@@ -140,7 +191,6 @@ export default function AccountabilityMode() {
     setTodaysHabits(prev => {
       const updated = { ...prev, [id]: value };
       
-      // Sync to history immediately
       setHistory(prevHistory => {
         const todayStr = new Date().toDateString();
         const newHistory = prevHistory.map(day => {
@@ -156,6 +206,8 @@ export default function AccountabilityMode() {
       return updated;
     });
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="max-w-6xl mx-auto p-8 lg:p-16 min-h-[calc(100vh-theme(spacing.16))] flex flex-col relative z-10">
@@ -174,18 +226,12 @@ export default function AccountabilityMode() {
             Record your reps. Dump your daily execution. Face the reality of your actions.
           </p>
         </div>
-        
-        {messages.length > 0 && (
-          <button onClick={handleReset} className="flex items-center gap-2 text-text-muted hover:text-white text-sm font-bold uppercase tracking-widest transition-colors pb-2">
-            <RotateCcw className="w-4 h-4" /> Reset
-          </button>
-        )}
       </header>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-0">
         
         {/* Left Col: Habit Tracker Grid */}
-        <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-dark-border scrollbar-track-transparent">
+        <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-dark-border scrollbar-track-transparent h-full pb-8">
           <div className="bg-dark-card border border-dark-border rounded-3xl p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 border-l-2 border-neon pl-2">
               <h3 className="text-text-muted font-bold text-xs uppercase tracking-widest">
@@ -207,7 +253,7 @@ export default function AccountabilityMode() {
                       <div className="flex gap-2">
                         <button 
                           onClick={() => setHabit(habit.id, true)}
-                          className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border ${
+                          className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border \${
                             isDoneToday === true
                               ? "bg-neon border-neon text-black shadow-[0_0_10px_rgba(204,255,0,0.5)]" 
                               : "bg-transparent border-dark-border text-text-muted hover:text-neon hover:border-neon"
@@ -217,7 +263,7 @@ export default function AccountabilityMode() {
                         </button>
                         <button 
                           onClick={() => setHabit(habit.id, false)}
-                          className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border ${
+                          className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border \${
                             isDoneToday === false
                               ? "bg-red-500 border-red-500 text-black shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
                               : "bg-transparent border-dark-border text-text-muted hover:text-red-500 hover:border-red-500"
@@ -242,7 +288,7 @@ export default function AccountabilityMode() {
                             <span className="text-[9px] font-mono text-dark-border leading-none">{dayNum}</span>
                             <div 
                               title={new Date(day.date).toLocaleDateString()}
-                              className={`w-full aspect-square rounded-[2px] transition-colors ${bgColor}`}
+                              className={`w-full aspect-square rounded-[2px] transition-colors \${bgColor}`}
                             ></div>
                           </div>
                         );
@@ -253,7 +299,7 @@ export default function AccountabilityMode() {
                         <span suppressHydrationWarning className="text-[9px] font-mono text-neon font-bold leading-none">{new Date().getDate()}</span>
                         <div 
                           title="Today"
-                          className={`w-full aspect-square rounded-[2px] transition-all ${
+                          className={`w-full aspect-square rounded-[2px] transition-all \${
                             isDoneToday === true 
                               ? "bg-neon shadow-[0_0_5px_rgba(204,255,0,0.5)]" 
                               : isDoneToday === false 
@@ -272,55 +318,119 @@ export default function AccountabilityMode() {
 
         {/* Right Col: Accountability Chat */}
         <div className="lg:col-span-2 flex flex-col min-h-[500px] relative">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 pb-6 space-y-6 scrollbar-thin scrollbar-thumb-dark-border scrollbar-track-transparent">
-            {messages.length === 0 ? (
-              <div className="flex-1 h-full min-h-[300px] bg-dark-card rounded-3xl border border-dark-border p-8 relative overflow-hidden group">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  disabled={loading}
-                  className="w-full h-full bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 sm:text-lg font-medium relative z-10 leading-relaxed disabled:opacity-50"
-                  placeholder="Dump everything here. What did you execute? Where did you fail? No excuses."
-                />
+          
+          {/* Tabs UI for 5-Slot Memory */}
+          <div className="mb-6 flex flex-wrap gap-2 items-center">
+            {sessions.map((s, idx) => (
+              <div 
+                key={s.id}
+                onClick={() => setActiveSessionId(s.id)}
+                className={`group cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-bold tracking-wide \${
+                  activeSessionId === s.id 
+                    ? "bg-neon border-neon text-black shadow-[0_0_15px_rgba(204,255,0,0.2)]" 
+                    : "bg-dark-card border-dark-border text-text-muted hover:border-neon/50 hover:text-text-main"
+                }`}
+              >
+                Entry 0{sessions.length - idx}
+                <button 
+                  onClick={(e) => handleDeleteSession(s.id, e)}
+                  className={`p-0.5 rounded-md opacity-50 hover:opacity-100 transition-opacity \${
+                    activeSessionId === s.id ? "hover:bg-black/20" : "hover:bg-dark-bg"
+                  }`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
+            ))}
+            
+            {sessions.length < 5 ? (
+              <button 
+                onClick={handleCreateSession}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold tracking-widest uppercase text-neon border border-neon/30 bg-neon/5 hover:bg-neon/10 rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" /> New
+              </button>
             ) : (
-              messages.map((msg, i) => (
-                <div key={i} className={`p-6 rounded-2xl ${msg.role === "user" ? "bg-dark-card border border-dark-border ml-12" : "bg-neon/10 border border-neon relative shadow-[0_0_30px_rgba(204,255,0,0.1)] mr-12"}`}>
-                  <h3 className={`font-bold text-sm uppercase tracking-widest mb-3 ${msg.role === "user" ? "text-text-muted" : "text-neon"}`}>
-                    {msg.role === "user" ? "Daily Log" : "Agent Verdict"}
-                  </h3>
-                  <p className="text-text-main font-medium whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                </div>
-              ))
+              <div className="px-4 py-2 text-xs font-bold tracking-widest uppercase text-red-500 border border-red-500/20 bg-red-500/5 rounded-lg flex items-center gap-2">
+                Storage Full (5/5)
+              </div>
             )}
           </div>
-          
-          <div className={`mt-auto pt-6 flex flex-col gap-4 ${messages.length > 0 ? "border-t border-dark-border" : ""}`}>
-            {messages.length > 0 && (
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={loading}
-                className="w-full bg-dark-card rounded-2xl border border-dark-border p-5 resize-none outline-none text-text-main placeholder:text-dark-border focus:border-neon/50 transition-colors h-24 disabled:opacity-50"
-                placeholder="Log more context or respond to the verdict..."
-              />
-            )}
-            
-            <button 
-              onClick={handleSubmit}
-              disabled={loading || !input.trim()}
-              className="flex items-center justify-between w-full sm:w-80 self-end bg-neon hover:bg-neon/90 disabled:opacity-50 disabled:cursor-not-allowed text-black px-8 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_20px_rgba(204,255,0,0.15)] group"
-            >
-              <span>{loading ? "Evaluating..." : "Commit Log"}</span>
-              <div className="p-1.5 rounded-full bg-black">
-                {loading ? (
-                  <Loader2 className="h-5 w-5 text-neon animate-spin" />
-                ) : (
-                  <ArrowUpRight className="h-5 w-5 text-neon group-hover:rotate-45 transition-transform" />
+
+          {!activeSession ? (
+            <div className="flex-1 flex items-center justify-center border border-dashed border-dark-border rounded-3xl bg-dark-card/50">
+              <div className="text-center">
+                <ShieldCheck className="w-12 h-12 text-dark-border mx-auto mb-4" />
+                <p className="text-text-muted font-medium">No active entries.</p>
+                <button 
+                  onClick={handleCreateSession}
+                  className="mt-4 text-neon font-bold text-sm hover:underline"
+                >
+                  Create your first Entry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-end items-center mb-4 px-2 tracking-widest text-xs uppercase text-dark-border font-bold">
+                {activeSession.messages.length > 0 && (
+                  <button onClick={handleReset} className="flex items-center gap-2 text-text-muted hover:text-white transition-colors">
+                    <RotateCcw className="w-3.5 h-3.5" /> Reset Log
+                  </button>
                 )}
               </div>
-            </button>
-          </div>
+              
+              <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 pb-6 space-y-6 scrollbar-thin scrollbar-thumb-dark-border scrollbar-track-transparent">
+                {activeSession.messages.length === 0 ? (
+                  <div className="flex-1 h-full min-h-[300px] bg-dark-card rounded-3xl border border-dark-border p-8 relative overflow-hidden group">
+                    <textarea
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      disabled={loading}
+                      className="w-full h-full bg-transparent resize-none outline-none text-text-main placeholder:text-dark-border focus:ring-0 sm:text-lg font-medium relative z-10 leading-relaxed disabled:opacity-50"
+                      placeholder="Dump everything here. What did you execute? Where did you fail? No excuses."
+                    />
+                  </div>
+                ) : (
+                  activeSession.messages.map((msg, i) => (
+                    <div key={i} className={`p-6 rounded-2xl \${msg.role === "user" ? "bg-dark-card border border-dark-border ml-12" : "bg-neon/10 border border-neon relative shadow-[0_0_30px_rgba(204,255,0,0.1)] mr-12"}`}>
+                      <h3 className={`font-bold text-sm uppercase tracking-widest mb-3 \${msg.role === "user" ? "text-text-muted" : "text-neon"}`}>
+                        {msg.role === "user" ? "Daily Log" : "Agent Verdict"}
+                      </h3>
+                      <p className="text-text-main font-medium whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <div className={`mt-auto pt-6 flex flex-col gap-4 \${activeSession.messages.length > 0 ? "border-t border-dark-border" : ""}`}>
+                {activeSession.messages.length > 0 && (
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    disabled={loading}
+                    className="w-full bg-dark-card rounded-2xl border border-dark-border p-5 resize-none outline-none text-text-main placeholder:text-dark-border focus:border-neon/50 transition-colors h-24 disabled:opacity-50"
+                    placeholder="Log more context or respond to the verdict..."
+                  />
+                )}
+                
+                <button 
+                  onClick={handleSubmit}
+                  disabled={loading || !input.trim()}
+                  className="flex items-center justify-between w-full sm:w-80 self-end bg-neon hover:bg-neon/90 disabled:opacity-50 disabled:cursor-not-allowed text-black px-8 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_20px_rgba(204,255,0,0.15)] group"
+                >
+                  <span>{loading ? "Evaluating..." : "Commit Log"}</span>
+                  <div className="p-1.5 rounded-full bg-black">
+                    {loading ? (
+                      <Loader2 className="h-5 w-5 text-neon animate-spin" />
+                    ) : (
+                      <ArrowUpRight className="h-5 w-5 text-neon group-hover:rotate-45 transition-transform" />
+                    )}
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

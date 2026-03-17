@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
+import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 
 export const metadata: Metadata = {
   title: "Brutally Honest Productivity OS",
@@ -18,7 +19,7 @@ export default function RootLayout({
         <div className="fixed inset-0 bg-grid pointer-events-none z-0"></div>
         <Navigation />
         <main className="flex-1 overflow-auto relative z-10">
-          {children}
+          <ConvexClientProvider>{children}</ConvexClientProvider>
         </main>
       </body>
     </html>

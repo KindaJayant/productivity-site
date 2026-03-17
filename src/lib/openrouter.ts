@@ -21,10 +21,11 @@ export async function callAgent(messages: Message[], systemPrompt?: string) {
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000", 
+        "X-Title": "Brutally Honest Productivity OS",
       },
       body: JSON.stringify({
-        // We can let the user pick the model, defaulting to a solid free one.
-        model: "huggingfaceh4/zephyr-7b-beta:free",
+        model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini", // Default to a very capable model, configurable via .env
         messages: apiMessages,
       }),
     });

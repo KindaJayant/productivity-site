@@ -9,7 +9,26 @@ export default function RubberDuckMode() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("brutal_rd_history");
+    if (stored) {
+      try {
+        setMessages(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse stored RD history", e);
+      }
+    }
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem("brutal_rd_history", JSON.stringify(messages));
+    }
+  }, [messages, mounted]);
 
   useEffect(() => {
     if (scrollRef.current) {

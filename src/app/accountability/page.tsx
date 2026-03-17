@@ -34,6 +34,7 @@ export default function AccountabilityMode() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [todaysHabits, setTodaysHabits] = useState<Record<string, boolean | null>>({
@@ -76,7 +77,25 @@ export default function AccountabilityMode() {
     } else {
       setHistory(generateLast14Days());
     }
+
+    // Load messages chat history from local storage
+    const storedMsgs = localStorage.getItem('brutal_acc_history');
+    if (storedMsgs) {
+      try {
+        setMessages(JSON.parse(storedMsgs));
+      } catch (e) {
+        console.error("Failed to parse acc msgs", e);
+      }
+    }
+    
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem("brutal_acc_history", JSON.stringify(messages));
+    }
+  }, [messages, mounted]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -168,9 +187,14 @@ export default function AccountabilityMode() {
         {/* Left Col: Habit Tracker Grid */}
         <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-dark-border scrollbar-track-transparent">
           <div className="bg-dark-card border border-dark-border rounded-3xl p-6">
-            <h3 className="text-text-muted font-bold text-xs uppercase tracking-widest pl-2 mb-6 border-l-2 border-neon">
-              Daily Reps
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 border-l-2 border-neon pl-2">
+              <h3 className="text-text-muted font-bold text-xs uppercase tracking-widest">
+                Daily Reps
+              </h3>
+              <span suppressHydrationWarning className="text-[10px] text-neon font-mono uppercase tracking-widest bg-neon/10 px-2 py-0.5 rounded-full border border-neon/20 w-fit">
+                {new Date().toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
             
             <div className="flex flex-col gap-6">
               {HABITS.map((habit) => {
@@ -205,33 +229,39 @@ export default function AccountabilityMode() {
                     </div>
                     
                     {/* Activity Grid */}
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 pt-2">
                       {history.slice(0, 13).map((day, i) => {
                         const status = day[habit.id as keyof DailyRecord];
                         let bgColor = "bg-dark-bg border border-dark-border/50"; // null / not recorded
                         if (status === true) bgColor = "bg-neon/60 group-hover:bg-neon/80";
                         if (status === false) bgColor = "bg-red-500/40 group-hover:bg-red-500/60";
+                        const dayNum = new Date(day.date).getDate();
 
                         return (
-                          <div 
-                            key={i} 
-                            title={new Date(day.date).toLocaleDateString()}
-                            className={`flex-1 aspect-square rounded-[2px] transition-colors ${bgColor}`}
-                          ></div>
+                          <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                            <span className="text-[9px] font-mono text-dark-border leading-none">{dayNum}</span>
+                            <div 
+                              title={new Date(day.date).toLocaleDateString()}
+                              className={`w-full aspect-square rounded-[2px] transition-colors ${bgColor}`}
+                            ></div>
+                          </div>
                         );
                       })}
                       
                       {/* Today's square tied to state */}
-                      <div 
-                        title="Today"
-                        className={`flex-1 aspect-square rounded-[2px] transition-all ${
-                          isDoneToday === true 
-                            ? "bg-neon shadow-[0_0_5px_rgba(204,255,0,0.5)]" 
-                            : isDoneToday === false 
-                              ? "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.3)]"
-                              : "bg-dark-border animate-pulse"
-                        }`}
-                      ></div>
+                      <div className="flex-1 flex flex-col items-center gap-1.5">
+                        <span suppressHydrationWarning className="text-[9px] font-mono text-neon font-bold leading-none">{new Date().getDate()}</span>
+                        <div 
+                          title="Today"
+                          className={`w-full aspect-square rounded-[2px] transition-all ${
+                            isDoneToday === true 
+                              ? "bg-neon shadow-[0_0_5px_rgba(204,255,0,0.5)]" 
+                              : isDoneToday === false 
+                                ? "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.3)]"
+                                : "bg-dark-border animate-pulse"
+                          }`}
+                        ></div>
+                      </div>
                     </div>
                   </div>
                 );

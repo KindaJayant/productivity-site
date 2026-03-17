@@ -9,7 +9,26 @@ export default function JournalMode() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("brutal_journal_history");
+    if (stored) {
+      try {
+        setMessages(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse stored journal history", e);
+      }
+    }
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem("brutal_journal_history", JSON.stringify(messages));
+    }
+  }, [messages, mounted]);
 
   useEffect(() => {
     if (scrollRef.current) {

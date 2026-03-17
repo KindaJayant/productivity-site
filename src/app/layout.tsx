@@ -17,9 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-zinc-950 text-zinc-100 flex min-h-screen selection:bg-indigo-500/30`}>
+      <body className={`${inter.className} bg-jedi text-martini flex min-h-screen selection:bg-english/40 selection:text-martini antialiased`}>
         <Navigation />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto relative">
           {children}
         </main>
       </body>

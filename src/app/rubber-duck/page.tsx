@@ -2,29 +2,32 @@ import { MessageSquare, Zap } from "lucide-react";
 
 export default function RubberDuckMode() {
   return (
-    <div className="max-w-4xl mx-auto p-8 lg:p-12 min-h-screen flex flex-col">
-      <header className="mb-8 border-b border-zinc-800 pb-8">
-        <div className="flex items-center gap-4 mb-3">
-          <div className="h-12 w-12 rounded-xl bg-rose-500/10 flex items-center justify-center">
-            <MessageSquare className="h-6 w-6 text-rose-400" />
+    <div className="max-w-5xl mx-auto p-8 lg:p-14 min-h-screen flex flex-col relative z-0">
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-english/5 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+      
+      <header className="mb-10 border-b border-walnut pb-10">
+        <div className="flex items-center gap-5 mb-4">
+          <div className="h-16 w-16 rounded-2xl bg-jedi border border-walnut shadow-[0_0_20px_rgba(63,41,32,0.6)] flex items-center justify-center">
+            <MessageSquare className="h-8 w-8 text-walnut drop-shadow-[0_0_8px_rgba(63,41,32,0.8)]" />
           </div>
-          <h1 className="text-3xl font-bold text-zinc-100">Rubber Duck</h1>
+          <h1 className="text-4xl font-black text-martini tracking-tight drop-shadow-[0_0_10px_rgba(182,168,162,0.1)]">Rubber Duck</h1>
         </div>
-        <p className="text-zinc-400 text-lg">
+        <p className="text-martini/70 text-xl font-light">
           Paste your current approach or architecture. Get uncomfortable Socratic questions, then the simpler path.
         </p>
       </header>
 
-      <div className="flex-1 flex flex-col gap-6">
-        <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-zinc-800 p-6 flex flex-col">
+      <div className="flex-1 flex flex-col gap-8">
+        <div className="flex-1 bg-stallion rounded-3xl border border-walnut/50 p-8 shadow-[0_10px_40px_rgba(15,30,29,0.8)] relative overflow-hidden flex flex-col">
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent to-jedi/10 pointer-events-none"></div>
           <textarea
-            className="w-full flex-1 bg-transparent resize-none outline-none text-zinc-200 placeholder:text-zinc-600 focus:ring-0 font-mono text-sm leading-relaxed"
+            className="w-full flex-1 bg-transparent resize-none outline-none text-martini placeholder:text-walnut focus:ring-0 font-mono text-base leading-relaxed relative z-10"
             placeholder="Paste your code, architecture, or idea here..."
           />
         </div>
-        <button className="flex items-center justify-center gap-2 w-full sm:w-auto self-end bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-xl font-medium transition-colors shadow-[0_0_20px_rgba(244,63,94,0.2)]">
+        <button className="flex items-center justify-center gap-3 w-full sm:w-auto self-end bg-walnut hover:bg-walnut/90 border border-english/50 text-martini px-10 py-5 rounded-2xl text-lg font-bold transition-all duration-300 shadow-[0_0_30px_rgba(63,41,32,0.4)] hover:shadow-[0_0_50px_rgba(71,25,20,0.6)] hover:-translate-y-1">
           Roast Approach
-          <Zap className="h-5 w-5" />
+          <Zap className="h-6 w-6 text-english drop-shadow-[0_0_5px_rgba(71,25,20,1)]" />
         </button>
       </div>
     </div>

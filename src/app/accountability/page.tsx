@@ -36,11 +36,10 @@ export default function AccountabilityMode() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Today's toggles
-  const [todaysHabits, setTodaysHabits] = useState<Record<string, boolean>>({
-    gym: false,
-    nofap: false,
-    read: false,
+  const [todaysHabits, setTodaysHabits] = useState<Record<string, boolean | null>>({
+    gym: null,
+    nofap: null,
+    read: null,
   });
   
   const [history, setHistory] = useState<DailyRecord[]>([]);
@@ -96,7 +95,7 @@ export default function AccountabilityMode() {
     try {
       // Build context string from the habit toggles if it's the first message
       const context = messages.length === 0 
-        ? `Habits Tracking Status:\nGym: ${todaysHabits.gym ? "Completed" : "Failed"}\nNoFap: ${todaysHabits.nofap ? "Completed" : "Failed"}\nRead: ${todaysHabits.read ? "Completed" : "Failed"}`
+        ? `Habits Tracking Status:\nGym: ${todaysHabits.gym === true ? "Completed" : todaysHabits.gym === false ? "Failed" : "Pending"}\nNoFap: ${todaysHabits.nofap === true ? "Completed" : todaysHabits.nofap === false ? "Failed" : "Pending"}\nRead: ${todaysHabits.read === true ? "Completed" : todaysHabits.read === false ? "Failed" : "Pending"}`
         : undefined;
 
       const result = await submitAccountability(newMessages, context);
@@ -118,11 +117,9 @@ export default function AccountabilityMode() {
     setInput("");
   };
 
-  const toggleHabit = (id: string) => {
-    const newVal = !todaysHabits[id];
-    
+  const setHabit = (id: string, value: boolean) => {
     setTodaysHabits(prev => {
-      const updated = { ...prev, [id]: newVal };
+      const updated = { ...prev, [id]: value };
       
       // Sync to history immediately
       setHistory(prevHistory => {
@@ -181,18 +178,30 @@ export default function AccountabilityMode() {
 
                 return (
                   <div key={habit.id} className="group">
-                    <div className="flex justify-between items-end mb-2">
-                      <span className="text-text-main font-bold text-sm tracking-wide">{habit.label}</span>
-                      <button 
-                        onClick={() => toggleHabit(habit.id)}
-                        className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border ${
-                          isDoneToday 
-                            ? "bg-neon border-neon text-black shadow-[0_0_10px_rgba(204,255,0,0.5)]" 
-                            : "bg-transparent border-red-500 text-red-500 hover:bg-red-500/10"
-                        }`}
-                      >
-                        {isDoneToday ? "Done" : "Missed"}
-                      </button>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-text-main font-bold text-sm tracking-wide flex-1">{habit.label}</span>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setHabit(habit.id, true)}
+                          className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border ${
+                            isDoneToday === true
+                              ? "bg-neon border-neon text-black shadow-[0_0_10px_rgba(204,255,0,0.5)]" 
+                              : "bg-transparent border-dark-border text-text-muted hover:text-neon hover:border-neon"
+                          }`}
+                        >
+                          Done
+                        </button>
+                        <button 
+                          onClick={() => setHabit(habit.id, false)}
+                          className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors border ${
+                            isDoneToday === false
+                              ? "bg-red-500 border-red-500 text-black shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
+                              : "bg-transparent border-dark-border text-text-muted hover:text-red-500 hover:border-red-500"
+                          }`}
+                        >
+                          Missed
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Activity Grid */}
@@ -216,7 +225,11 @@ export default function AccountabilityMode() {
                       <div 
                         title="Today"
                         className={`flex-1 aspect-square rounded-[2px] transition-all ${
-                          isDoneToday ? "bg-neon shadow-[0_0_5px_rgba(204,255,0,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.3)]"
+                          isDoneToday === true 
+                            ? "bg-neon shadow-[0_0_5px_rgba(204,255,0,0.5)]" 
+                            : isDoneToday === false 
+                              ? "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.3)]"
+                              : "bg-dark-border animate-pulse"
                         }`}
                       ></div>
                     </div>

@@ -4,7 +4,8 @@ import { ShieldCheck, ArrowUpRight, Loader2, Plus, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { submitAccountability } from "../actions";
 import { Message } from "@/lib/openrouter";
-import { logActivity } from "@/components/StreakWidget";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { v4 as uuidv4 } from "uuid";
 
 const HABITS = [
@@ -41,8 +42,13 @@ export default function AccountabilityMode() {
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 5-Slot Sessions
-  const [sessions, setSessions] = useState<Session[]>([]);
+  // 5-Slot Sessions via Convex
+  const sessions = useQuery(api.memory.getSessions, { type: "accountability" }) || [];
+  const createSessionMut = useMutation(api.memory.createSession);
+  const deleteSessionMut = useMutation(api.memory.deleteSession);
+  const updateMessagesMut = useMutation(api.memory.updateMessages);
+  const logActivity = useMutation(api.streaks.log);
+
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   // Habit tracking — full 14 day history
@@ -70,28 +76,8 @@ export default function AccountabilityMode() {
       setHistory(generateLast14Days());
     }
 
-    // Load sessions
-    const storedSessions = localStorage.getItem("brutal_acc_sessions");
-    if (storedSessions) {
-      try {
-        const parsed = JSON.parse(storedSessions);
-        if (parsed.length > 0) {
-          setSessions(parsed);
-          setActiveSessionId(parsed[0].id);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (mounted) {
-      localStorage.setItem("brutal_acc_sessions", JSON.stringify(sessions));
-    }
-  }, [sessions, mounted]);
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || null;
 
@@ -128,24 +114,27 @@ export default function AccountabilityMode() {
   };
 
   // Sessions management
-  const handleCreateSession = () => {
+  const handleCreateSession = async () => {
     if (sessions.length >= 5) return;
-    const newSession: Session = {
-      id: uuidv4(),
-      title: `Entry 0${sessions.length + 1}`,
-      date: new Date().toISOString(),
-      messages: [],
-    };
-    setSessions([newSession, ...sessions]);
-    setActiveSessionId(newSession.id);
+    const title = `Entry 0${sessions.length + 1}`;
+    const date = new Date().toISOString();
+    
+    const newId = await createSessionMut({
+      title,
+      type: "accountability",
+      date
+    });
+    // @ts-ignore Since Convex id behaves like a string
+    setActiveSessionId(newId);
   };
 
-  const handleDeleteSession = (id: string, e: React.MouseEvent) => {
+  const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newSessions = sessions.filter(s => s.id !== id);
-    setSessions(newSessions);
-    if (activeSessionId === id) {
-      setActiveSessionId(newSessions.length > 0 ? newSessions[0].id : null);
+    // @ts-ignore
+    await deleteSessionMut({ id });
+    if (activeSessionId === id && sessions.length > 0) {
+      const nextSession = sessions.find(s => s.id !== id);
+      setActiveSessionId(nextSession ? nextSession.id : null);
     }
   };
 
@@ -154,9 +143,10 @@ export default function AccountabilityMode() {
     const userMsg: Message = { role: "user", content: input };
     const newMessages = [...(activeSession?.messages || []), userMsg];
 
-    setSessions(prev => prev.map(s =>
-      s.id === activeSessionId ? { ...s, messages: newMessages } : s
-    ));
+    // Optimistically UI could be handled by Convex directly if we patch immediately,
+    // but here we just wait for the update
+    // @ts-ignore
+    await updateMessagesMut({ id: activeSessionId, messages: newMessages });
     setInput("");
     setLoading(true);
 
@@ -168,24 +158,28 @@ export default function AccountabilityMode() {
         : undefined;
 
       const result = await submitAccountability(newMessages, context);
-      logActivity();
-      setSessions(prev => prev.map(s =>
-        s.id === activeSessionId ? { ...s, messages: [...newMessages, { role: "assistant", content: result }] } : s
-      ));
-    } catch {
-      setSessions(prev => prev.map(s =>
-        s.id === activeSessionId ? { ...s, messages: [...newMessages, { role: "assistant", content: "Failed to connect to Accountability Agent." }] } : s
-      ));
+      await logActivity();
+      
+      if (result.error) {
+        // @ts-ignore
+        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }] });
+      } else {
+        // @ts-ignore
+        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: result.content || "Empty response from agent." }] });
+      }
+    } catch (error) {
+      console.error("Accountability mode exception:", error);
+      // @ts-ignore
+      await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Accountability Agent." }] });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!activeSessionId) return;
-    setSessions(prev => prev.map(s =>
-      s.id === activeSessionId ? { ...s, messages: [] } : s
-    ));
+    // @ts-ignore
+    await updateMessagesMut({ id: activeSessionId, messages: [] });
     setInput("");
   };
 

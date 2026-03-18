@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import { submitRubberDuck } from "../actions";
 import { Message } from "@/lib/openrouter";
 import { v4 as uuidv4 } from "uuid";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 export type Session = {
   id: string;
@@ -14,7 +16,12 @@ export type Session = {
 };
 
 export default function RubberDuckMode() {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  // 5-Slot Sessions via Convex
+  const sessions = useQuery(api.memory.getSessions, { type: "rubber_duck" }) || [];
+  const createSessionMut = useMutation(api.memory.createSession);
+  const deleteSessionMut = useMutation(api.memory.deleteSession);
+  const updateMessagesMut = useMutation(api.memory.updateMessages);
+
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   
   const [input, setInput] = useState("");
@@ -23,26 +30,8 @@ export default function RubberDuckMode() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem("brutal_rd_sessions");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.length > 0) {
-          setSessions(parsed);
-          setActiveSessionId(parsed[0].id);
-        }
-      } catch (e) {
-        console.error("Failed to parse stored RD sessions", e);
-      }
-    }
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (mounted) {
-      localStorage.setItem("brutal_rd_sessions", JSON.stringify(sessions));
-    }
-  }, [sessions, mounted]);
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || null;
 
@@ -52,26 +41,27 @@ export default function RubberDuckMode() {
     }
   }, [activeSession?.messages]);
 
-  const handleCreateSession = () => {
+  const handleCreateSession = async () => {
     if (sessions.length >= 5) return;
+    const title = `Architecture 0${sessions.length + 1}`;
+    const date = new Date().toISOString();
     
-    const newSession: Session = {
-      id: uuidv4(),
-      title: `Architecture ${sessions.length + 1}`,
-      date: new Date().toISOString(),
-      messages: []
-    };
-    
-    setSessions([newSession, ...sessions]);
-    setActiveSessionId(newSession.id);
+    const newId = await createSessionMut({
+      title,
+      type: "rubber_duck",
+      date
+    });
+    // @ts-ignore
+    setActiveSessionId(newId);
   };
 
-  const handleDeleteSession = (id: string, e: React.MouseEvent) => {
+  const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newSessions = sessions.filter(s => s.id !== id);
-    setSessions(newSessions);
-    if (activeSessionId === id) {
-      setActiveSessionId(newSessions.length > 0 ? newSessions[0].id : null);
+    // @ts-ignore
+    await deleteSessionMut({ id });
+    if (activeSessionId === id && sessions.length > 0) {
+      const nextSession = sessions.find(s => s.id !== id);
+      setActiveSessionId(nextSession ? nextSession.id : null);
     }
   };
 
@@ -81,33 +71,34 @@ export default function RubberDuckMode() {
     const userMsg: Message = { role: "user", content: input };
     const newMessages = [...(activeSession?.messages || []), userMsg];
     
-    // Optimistic UI update
-    setSessions(prev => prev.map(s => 
-      s.id === activeSessionId ? { ...s, messages: newMessages } : s
-    ));
+    // @ts-ignore
+    await updateMessagesMut({ id: activeSessionId, messages: newMessages });
     setInput("");
     setLoading(true);
 
     try {
       const result = await submitRubberDuck(newMessages);
-      setSessions(prev => prev.map(s => 
-        s.id === activeSessionId ? { ...s, messages: [...newMessages, { role: "assistant", content: result }] } : s
-      ));
+      
+      if (result.error) {
+        // @ts-ignore
+        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }] });
+      } else {
+        // @ts-ignore
+        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: result.content || "Empty response from agent." }] });
+      }
     } catch (error) {
-      console.error(error);
-      setSessions(prev => prev.map(s => 
-        s.id === activeSessionId ? { ...s, messages: [...newMessages, { role: "assistant", content: "Failed to connect to Rubber Duck AI." }] } : s
-      ));
+      console.error("Duck mode exception:", error);
+      // @ts-ignore
+      await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Rubber Duck AI." }] });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!activeSessionId) return;
-    setSessions(prev => prev.map(s => 
-      s.id === activeSessionId ? { ...s, messages: [] } : s
-    ));
+    // @ts-ignore
+    await updateMessagesMut({ id: activeSessionId, messages: [] });
     setInput("");
   };
 
@@ -143,7 +134,7 @@ export default function RubberDuckMode() {
           <div 
             key={s.id}
             onClick={() => setActiveSessionId(s.id)}
-            className={`group cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-bold tracking-wide \${
+            className={`group cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm font-bold tracking-wide ${
               activeSessionId === s.id 
                 ? "bg-neon border-neon text-black shadow-[0_0_15px_rgba(204,255,0,0.2)]" 
                 : "bg-dark-card border-dark-border text-text-muted hover:border-neon/50 hover:text-text-main"
@@ -152,7 +143,7 @@ export default function RubberDuckMode() {
             Architecture 0{sessions.length - idx}
             <button 
               onClick={(e) => handleDeleteSession(s.id, e)}
-              className={`p-0.5 rounded-md opacity-50 hover:opacity-100 transition-opacity \${
+              className={`p-0.5 rounded-md opacity-50 hover:opacity-100 transition-opacity ${
                 activeSessionId === s.id ? "hover:bg-black/20" : "hover:bg-dark-bg"
               }`}
             >
@@ -222,8 +213,8 @@ export default function RubberDuckMode() {
                 </div>
               ) : (
                 activeSession.messages.map((msg, i) => (
-                  <div key={i} className={`p-6 rounded-2xl \${msg.role === "user" ? "bg-dark-card border border-dark-border ml-12" : "bg-neon/10 border border-neon relative shadow-[0_0_30px_rgba(204,255,0,0.1)] mr-12"}`}>
-                    <h3 className={`font-bold text-sm uppercase tracking-widest mb-3 \${msg.role === "user" ? "text-text-muted" : "text-neon"}`}>
+                  <div key={i} className={`p-6 rounded-2xl ${msg.role === "user" ? "bg-dark-card border border-dark-border ml-12" : "bg-neon/10 border border-neon relative shadow-[0_0_30px_rgba(204,255,0,0.1)] mr-12"}`}>
+                    <h3 className={`font-bold text-sm uppercase tracking-widest mb-3 ${msg.role === "user" ? "text-text-muted" : "text-neon"}`}>
                       {msg.role === "user" ? "User Input" : "Duck Output"}
                     </h3>
                     <p className="text-text-main font-mono text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -232,7 +223,7 @@ export default function RubberDuckMode() {
               )}
             </div>
             
-            <div className={`mt-auto pt-6 flex flex-col gap-4 \${activeSession.messages.length > 0 ? "border-t border-dark-border" : ""}`}>
+            <div className={`mt-auto pt-6 flex flex-col gap-4 ${activeSession.messages.length > 0 ? "border-t border-dark-border" : ""}`}>
               {activeSession.messages.length > 0 && (
                 <textarea
                   value={input}

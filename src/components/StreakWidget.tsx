@@ -2,84 +2,18 @@
 
 import { ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
-
-export function getStreak() {
-  if (typeof window === 'undefined') return 0;
-  try {
-    const data = localStorage.getItem('brutal_streak');
-    if (!data) return 0;
-    const { streak, lastLoggedDate } = JSON.parse(data);
-    if (!lastLoggedDate) return 0;
-    
-    const today = new Date().toDateString();
-    if (lastLoggedDate === today) {
-      return streak;
-    }
-    
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (lastLoggedDate === yesterday.toDateString()) {
-      return streak; 
-    }
-    
-    return 0; // Streak broken
-  } catch {
-    return 0;
-  }
-}
-
-export function logActivity() {
-  try {
-    const data = localStorage.getItem('brutal_streak');
-    const today = new Date().toDateString();
-    
-    let currentStreak = 0;
-    let lastLoggedDate = null;
-    
-    if (data) {
-      const parsed = JSON.parse(data);
-      currentStreak = parsed.streak || 0;
-      lastLoggedDate = parsed.lastLoggedDate;
-    }
-    
-    if (lastLoggedDate === today) {
-      return currentStreak; 
-    }
-    
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    if (lastLoggedDate === yesterday.toDateString()) {
-      currentStreak += 1;
-    } else {
-      currentStreak = 1;
-    }
-    
-    localStorage.setItem('brutal_streak', JSON.stringify({
-      streak: currentStreak,
-      lastLoggedDate: today
-    }));
-    
-    window.dispatchEvent(new Event('streak_updated'));
-    return currentStreak;
-  } catch {
-    return 1;
-  }
-}
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export function StreakWidget() {
-  const [streak, setStreak] = useState(0);
+  const streak = useQuery(api.streaks.get);
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
-    setStreak(getStreak());
-    const handleUpdate = () => setStreak(getStreak());
-    window.addEventListener('streak_updated', handleUpdate);
-    return () => window.removeEventListener('streak_updated', handleUpdate);
   }, []);
 
-  if (!mounted) {
+  if (!mounted || streak === undefined) {
     // Avoid hydration mismatch by rendering an empty placeholder with same dimensions
     return <div className="p-6 rounded-3xl bg-dark-card border border-dark-border min-w-[240px] h-[150px] animate-pulse"></div>;
   }

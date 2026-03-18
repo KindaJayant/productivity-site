@@ -21,7 +21,7 @@ Rules:
 - Tone: calm, direct, like a senior engineer who doesn't have time for noise
 `;
 
-export async function submitFocus(history: Message[]) {
+export async function submitFocus(history: Message[]): Promise<{ content?: string; error?: string }> {
   return callAgent(history, FOCUS_PROMPT);
 }
 
@@ -42,7 +42,7 @@ Rules:
 - Tone: like a senior dev doing a code review who genuinely wants them to succeed but won't coddle them
 `;
 
-export async function submitRubberDuck(history: Message[]) {
+export async function submitRubberDuck(history: Message[]): Promise<{ content?: string; error?: string }> {
   return callAgent(history, DUCK_PROMPT);
 }
 
@@ -71,7 +71,7 @@ Rules:
 - If no prior history exists, base judgment purely on today's log
 `;
 
-export async function submitAccountability(history: Message[], context?: string) {
+export async function submitAccountability(history: Message[], context?: string): Promise<{ content?: string; error?: string }> {
   // If it's the very first message sequence and we have context, inject it
   if (context && history.length === 1 && history[0].role === "user") {
     const enrichedHistory = [...history];
@@ -106,8 +106,12 @@ For the "note" field:
 CRITICAL: Always return valid JSON. Never return plain text.
 `;
 
-export async function submitJournal(history: Message[]): Promise<{ sentiment: string; note: string | null }> {
-  const raw = await callAgent(history, JOURNAL_PROMPT);
+export async function submitJournal(history: Message[]): Promise<{ sentiment: string; note: string | null; error?: string }> {
+  const result = await callAgent(history, JOURNAL_PROMPT);
+  if (result.error) {
+    return { sentiment: "neutral", note: null, error: result.error };
+  }
+  const raw = result.content || "";
   try {
     // Strip markdown code fences if the model wraps the JSON
     const clean = raw.replace(/```json|```/g, "").trim();

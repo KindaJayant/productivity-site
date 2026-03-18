@@ -3,11 +3,11 @@ export interface Message {
   content: string;
 }
 
-export async function callAgent(messages: Message[], systemPrompt?: string) {
+export async function callAgent(messages: Message[], systemPrompt?: string): Promise<{ content?: string; error?: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    throw new Error("OPENROUTER_API_KEY is not defined in environment variables.");
+    return { error: "OPENROUTER_API_KEY is not defined in environment variables." };
   }
 
   // If a system prompt is provided, prepend it to the messages
@@ -33,13 +33,13 @@ export async function callAgent(messages: Message[], systemPrompt?: string) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("OpenRouter API Error:", errorText);
-      throw new Error(`OpenRouter API call failed with status ${response.status}`);
+      return { error: `OpenRouter API call failed with status ${response.status}: ${errorText}` };
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || "";
-  } catch (error) {
+    return { content: data.choices?.[0]?.message?.content || "" };
+  } catch (error: any) {
     console.error("Agent call failed:", error);
-    throw error;
+    return { error: error?.message || "Failed to reach OpenRouter API" };
   }
 }

@@ -6,16 +6,29 @@ export default defineSchema({
     type: v.union(
       v.literal("focus"),
       v.literal("rubber_duck"),
-      v.literal("accountability")
+      v.literal("accountability"),
+      v.literal("journal")
     ),
-    status: v.union(
-      v.literal("active"),
-      v.literal("completed"),
-      v.literal("abandoned")
+    title: v.string(),
+    status: v.optional(v.string()),
+    date: v.string(), // ISO string from frontend
+    messages: v.array(
+      v.object({
+        role: v.union(v.literal("system"), v.literal("user"), v.literal("assistant")),
+        content: v.string()
+      })
     ),
-    startTime: v.number(), // Unix timestamp
-    endTime: v.optional(v.number()), // Unix timestamp
-    goal: v.optional(v.string()), // Optional focus goal
+    // Optionally keep these from before if needed
+    startTime: v.optional(v.number()), 
+    endTime: v.optional(v.number()),
+    goal: v.optional(v.string()),
+    sentiment: v.optional(v.string()),
+  }),
+
+  user_stats: defineTable({
+    userId: v.string(),
+    streak: v.number(),
+    lastLoggedDate: v.string(),
   }),
 
   logs: defineTable({

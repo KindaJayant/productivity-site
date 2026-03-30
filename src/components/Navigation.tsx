@@ -16,8 +16,8 @@ export function Navigation() {
         <div className="h-8 w-8 rounded bg-neon flex items-center justify-center">
           <Brain className="h-5 w-5 text-black" />
         </div>
-        <h1 className="text-xl font-bold text-text-main tracking-widest uppercase">
-          OS <span className="text-neon">Brutal.</span>
+        <h1 className="text-xl font-black text-text-main tracking-[0.2em] italic">
+          SYN<span className="text-neon">APSE</span>
         </h1>
       </div>
 

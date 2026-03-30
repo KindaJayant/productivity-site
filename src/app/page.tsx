@@ -1,4 +1,4 @@
-import { Brain, Target, MessageSquare, ShieldCheck, ArrowUpRight, NotebookPen } from "lucide-react";
+import { Target, MessageSquare, ShieldCheck, ArrowUpRight, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { StreakWidget } from "@/components/StreakWidget";
 
@@ -37,14 +37,10 @@ export default function Home() {
   return (
     <div className="max-w-6xl mx-auto p-8 lg:p-16 relative">
       <header className="mb-20 mt-8 relative flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-neon/10 border border-neon/30 text-neon text-xs font-bold tracking-widest uppercase rounded-full mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-neon animate-pulse"></span>
-            System Online
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-text-main mb-6 leading-tight">
+        <div className="flex-1">
+          <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-text-main mb-8 leading-[0.85] uppercase italic">
             Welcome back.<br />
-            <span className="text-neon">Let's get to work.</span>
+            <span className="text-neon">Focus mode.</span>
           </h1>
           <p className="text-lg md:text-xl text-text-muted max-w-2xl leading-relaxed font-medium">
             Your trusted partner for productivity. Choose a module below to park your noise, clarify your thoughts, and secure your focus.

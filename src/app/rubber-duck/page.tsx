@@ -51,14 +51,14 @@ export default function RubberDuckMode() {
       type: "rubber_duck",
       date
     });
-    // @ts-ignore
-    setActiveSessionId(newId);
+    // @ts-expect-error - Convex ID type mismatch
+    setActiveSessionId(newId as string);
   };
 
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // @ts-ignore
-    await deleteSessionMut({ id });
+    // @ts-expect-error - Convex ID type mismatch
+    await deleteSessionMut({ id: id as any });
     if (activeSessionId === id && sessions.length > 0) {
       const nextSession = sessions.find(s => s.id !== id);
       setActiveSessionId(nextSession ? nextSession.id : null);
@@ -71,8 +71,8 @@ export default function RubberDuckMode() {
     const userMsg: Message = { role: "user", content: input };
     const newMessages = [...(activeSession?.messages || []), userMsg];
     
-    // @ts-ignore
-    await updateMessagesMut({ id: activeSessionId, messages: newMessages });
+    // @ts-expect-error - Convex ID type mismatch
+    await updateMessagesMut({ id: activeSessionId as any, messages: newMessages });
     setInput("");
     setLoading(true);
 
@@ -80,16 +80,16 @@ export default function RubberDuckMode() {
       const result = await submitRubberDuck(newMessages);
       
       if (result.error) {
-        // @ts-ignore
-        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }] });
+        // @ts-expect-error - Convex ID type mismatch
+        await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }] });
       } else {
-        // @ts-ignore
-        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: result.content || "Empty response from agent." }] });
+        // @ts-expect-error - Convex ID type mismatch
+        await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: result.content || "Empty response from agent." }] });
       }
     } catch (error) {
       console.error("Duck mode exception:", error);
-      // @ts-ignore
-      await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Rubber Duck AI." }] });
+      // @ts-expect-error - Convex ID type mismatch
+      await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Rubber Duck AI." }] });
     } finally {
       setLoading(false);
     }
@@ -97,8 +97,8 @@ export default function RubberDuckMode() {
 
   const handleReset = async () => {
     if (!activeSessionId) return;
-    // @ts-ignore
-    await updateMessagesMut({ id: activeSessionId, messages: [] });
+    // @ts-expect-error - Convex ID type mismatch
+    await updateMessagesMut({ id: activeSessionId as any, messages: [] });
     setInput("");
   };
 
@@ -123,7 +123,7 @@ export default function RubberDuckMode() {
             Rubber Duck
           </h1>
           <p className="text-lg text-text-muted mt-4 max-w-xl leading-relaxed">
-            Paste your current approach or architecture. We'll expose the overengineering and find the simpler path.
+            Paste your current approach or architecture. We&apos;ll expose the overengineering and find the simpler path.
           </p>
         </div>
       </header>

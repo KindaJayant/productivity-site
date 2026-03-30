@@ -6,7 +6,6 @@ import { submitAccountability } from "../actions";
 import { Message } from "@/lib/openrouter";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { v4 as uuidv4 } from "uuid";
 
 const HABITS = [
   { id: "gym", label: "Gym" },
@@ -124,14 +123,14 @@ export default function AccountabilityMode() {
       type: "accountability",
       date
     });
-    // @ts-ignore Since Convex id behaves like a string
-    setActiveSessionId(newId);
+    // @ts-expect-error - Convex ID type mismatch
+    setActiveSessionId(newId as string);
   };
 
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // @ts-ignore
-    await deleteSessionMut({ id });
+    // @ts-expect-error - Convex ID type mismatch
+    await deleteSessionMut({ id: id as any });
     if (activeSessionId === id && sessions.length > 0) {
       const nextSession = sessions.find(s => s.id !== id);
       setActiveSessionId(nextSession ? nextSession.id : null);
@@ -145,8 +144,8 @@ export default function AccountabilityMode() {
 
     // Optimistically UI could be handled by Convex directly if we patch immediately,
     // but here we just wait for the update
-    // @ts-ignore
-    await updateMessagesMut({ id: activeSessionId, messages: newMessages });
+    // @ts-expect-error - Convex ID type mismatch
+    await updateMessagesMut({ id: activeSessionId as any, messages: newMessages });
     setInput("");
     setLoading(true);
 
@@ -161,16 +160,16 @@ export default function AccountabilityMode() {
       await logActivity();
       
       if (result.error) {
-        // @ts-ignore
-        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }] });
+        // @ts-expect-error - Convex ID type mismatch
+        await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }] });
       } else {
-        // @ts-ignore
-        await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: result.content || "Empty response from agent." }] });
+        // @ts-expect-error - Convex ID type mismatch
+        await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: result.content || "Empty response from agent." }] });
       }
     } catch (error) {
       console.error("Accountability mode exception:", error);
-      // @ts-ignore
-      await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Accountability Agent." }] });
+      // @ts-expect-error - Convex ID type mismatch
+      await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Accountability Agent." }] });
     } finally {
       setLoading(false);
     }
@@ -178,8 +177,8 @@ export default function AccountabilityMode() {
 
   const handleReset = async () => {
     if (!activeSessionId) return;
-    // @ts-ignore
-    await updateMessagesMut({ id: activeSessionId, messages: [] });
+    // @ts-expect-error - Convex ID type mismatch
+    await updateMessagesMut({ id: activeSessionId as any, messages: [] });
     setInput("");
   };
 

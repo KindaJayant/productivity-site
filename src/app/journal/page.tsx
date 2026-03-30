@@ -4,7 +4,6 @@ import { NotebookPen, ArrowUpRight, Loader2, RotateCcw, Plus, X } from "lucide-r
 import { useState, useRef, useEffect } from "react";
 import { submitJournal } from "../actions";
 import { Message } from "@/lib/openrouter";
-import { v4 as uuidv4 } from "uuid";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
@@ -59,8 +58,8 @@ export default function JournalMode() {
       type: "journal",
       date
     });
-    // @ts-ignore
-    setActiveSessionId(newId);
+    // @ts-expect-error
+    setActiveSessionId(newId as string);
   };
 
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
@@ -99,8 +98,8 @@ export default function JournalMode() {
           ? [...newMessages, { role: "assistant" as const, content: result.note }]
           : newMessages;
           
-        // @ts-ignore
-        await updateMessagesMut({ id: activeSessionId, messages: updatedMessages, sentiment: result.sentiment });
+        // @ts-expect-error
+        await updateMessagesMut({ id: activeSessionId as any, messages: updatedMessages, sentiment: result.sentiment as any });
       }
     } catch (error) {
       console.error("Journal mode exception:", error);

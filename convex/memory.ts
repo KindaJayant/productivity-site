@@ -11,11 +11,11 @@ export const getSessions = query({
       .take(5);
       
     return sessions.map(s => ({
-      id: s._id,
+      id: s._id as string,
       title: s.title,
       date: s.date,
       messages: s.messages,
-      sentiment: s.sentiment
+      sentiment: s.sentiment ?? undefined
     }));
   },
 });

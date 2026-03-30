@@ -57,7 +57,6 @@ export default function FocusMode() {
 
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // @ts-expect-error
     await deleteSessionMut({ id: id as any });
     if (activeSessionId === id && sessions.length > 0) {
       const nextSession = sessions.find(s => s.id !== id);
@@ -71,7 +70,6 @@ export default function FocusMode() {
     const userMsg: Message = { role: "user", content: input };
     const newMessages = [...(activeSession?.messages || []), userMsg];
     
-    // @ts-expect-error
     await updateMessagesMut({ id: activeSessionId as any, messages: newMessages });
     setInput("");
     setLoading(true);
@@ -80,15 +78,12 @@ export default function FocusMode() {
       const result = await submitFocus(newMessages);
       
       if (result.error) {
-        // @ts-expect-error
         await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }] });
       } else {
-        // @ts-expect-error
         await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: result.content || "Empty response from agent." }] });
       }
     } catch (error) {
       console.error("Focus mode exception:", error);
-      // @ts-expect-error
       await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to the Focus Engine." }] });
     } finally {
       setLoading(false);
@@ -97,7 +92,6 @@ export default function FocusMode() {
 
   const handleReset = async () => {
     if (!activeSessionId) return;
-    // @ts-expect-error
     await updateMessagesMut({ id: activeSessionId as any, messages: [] });
     setInput("");
   };

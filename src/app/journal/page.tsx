@@ -63,8 +63,7 @@ export default function JournalMode() {
 
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // @ts-ignore
-    await deleteSessionMut({ id });
+    await deleteSessionMut({ id: id as any });
     if (activeSessionId === id && sessions.length > 0) {
       const nextSession = sessions.find(s => s.id !== id);
       setActiveSessionId(nextSession ? nextSession.id : null);
@@ -77,8 +76,7 @@ export default function JournalMode() {
     const userMsg: Message = { role: "user", content: input };
     const newMessages = [...(activeSession?.messages || []), userMsg];
 
-    // @ts-ignore
-    await updateMessagesMut({ id: activeSessionId, messages: newMessages });
+    await updateMessagesMut({ id: activeSessionId as any, messages: newMessages });
     setInput("");
     setLoading(true);
 
@@ -86,11 +84,10 @@ export default function JournalMode() {
       const result = await submitJournal(newMessages);
       
       if (result.error) {
-        // @ts-ignore
         await updateMessagesMut({ 
-          id: activeSessionId, 
+          id: activeSessionId as any, 
           messages: [...newMessages, { role: "assistant", content: `⚠️ [SYSTEM FAILURE]: ${result.error}` }],
-          sentiment: result.sentiment 
+          sentiment: result.sentiment as any
         });
       } else {
         const updatedMessages = result.note
@@ -101,8 +98,7 @@ export default function JournalMode() {
       }
     } catch (error) {
       console.error("Journal mode exception:", error);
-      // @ts-ignore
-      await updateMessagesMut({ id: activeSessionId, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Journal AI." }] });
+      await updateMessagesMut({ id: activeSessionId as any, messages: [...newMessages, { role: "assistant", content: "⚠️ [FATAL]: Failed to connect to Journal AI." }] });
     } finally {
       setLoading(false);
     }
@@ -110,8 +106,7 @@ export default function JournalMode() {
 
   const handleReset = async () => {
     if (!activeSessionId) return;
-    // @ts-ignore
-    await updateMessagesMut({ id: activeSessionId, messages: [], sentiment: null });
+    await updateMessagesMut({ id: activeSessionId as any, messages: [], sentiment: null as any });
     setInput("");
   };
 

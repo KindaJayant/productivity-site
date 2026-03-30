@@ -52,7 +52,6 @@ export default function FocusMode() {
       type: "focus",
       date
     });
-    // @ts-expect-error
     setActiveSessionId(newId as string);
   };
 

@@ -123,7 +123,6 @@ export default function AccountabilityMode() {
       type: "accountability",
       date
     });
-    // @ts-expect-error - Convex ID type mismatch
     setActiveSessionId(newId as string);
   };
 

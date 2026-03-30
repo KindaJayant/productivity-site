@@ -58,7 +58,6 @@ export default function JournalMode() {
       type: "journal",
       date
     });
-    // @ts-expect-error
     setActiveSessionId(newId as string);
   };
 
@@ -98,7 +97,6 @@ export default function JournalMode() {
           ? [...newMessages, { role: "assistant" as const, content: result.note }]
           : newMessages;
           
-        // @ts-expect-error
         await updateMessagesMut({ id: activeSessionId as any, messages: updatedMessages, sentiment: result.sentiment as any });
       }
     } catch (error) {

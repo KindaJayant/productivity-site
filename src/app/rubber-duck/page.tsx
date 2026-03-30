@@ -51,7 +51,6 @@ export default function RubberDuckMode() {
       type: "rubber_duck",
       date
     });
-    // @ts-expect-error - Convex ID type mismatch
     setActiveSessionId(newId as string);
   };
 

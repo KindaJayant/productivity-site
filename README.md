@@ -1,4 +1,4 @@
-# SYNAPSE
+# Productivity Website Project
 
 **AI-Powered Productivity OS**
 
